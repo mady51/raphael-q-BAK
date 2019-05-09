@@ -7348,10 +7348,15 @@ static inline bool task_fits_max(struct task_struct *p, int cpu)
 	if (capacity == max_capacity)
 		return true;
 
-	if ((task_boost_policy(p) == SCHED_BOOST_ON_BIG ||
-			schedtune_task_boost(p) > 10) &&
-			is_min_capacity_cpu(cpu))
-		return false;
+	if (is_min_capacity_cpu(cpu)) {
+		if (task_boost_policy(p) == SCHED_BOOST_ON_BIG ||
+			task_boost > 0 ||
+			schedtune_task_boost(p) > 10)
+			return false;
+	} else { /* mid cap cpu */
+		if (task_boost > 1)
+			return false;
+	}
 
 	return task_fits_capacity(p, capacity, cpu);
 }
@@ -8155,6 +8160,10 @@ static int find_energy_efficient_cpu(struct sched_domain *sd,
 	u64 start_t = 0;
 	int next_cpu = -1, backup_cpu = -1;
 	int boosted = (schedtune_task_boost(p) > 0 || per_task_boost(p) > 0);
+	bool sync_boost = false;
+	bool about_to_idle = (cpu_rq(cpu)->nr_running < 2);
+//curtis@ASTI, 2019/4/29, add for uxrealm CONFIG_OPCHAIN
+	bool is_uxtop = is_opc_task(p, UT_FORE);
 
 	fbt_env.fastpath = 0;
 
