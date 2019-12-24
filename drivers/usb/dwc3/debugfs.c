@@ -543,14 +543,7 @@ static ssize_t dwc3_link_state_write(struct file *file,
 		return -EINVAL;
 
 	spin_lock_irqsave(&dwc->lock, flags);
-	reg = dwc3_readl(dwc->regs, DWC3_DSTS);
-	speed = reg & DWC3_DSTS_CONNECTSPD;
 
-	if (speed < DWC3_DSTS_SUPERSPEED &&
-	    state != DWC3_LINK_STATE_RECOV) {
-		spin_unlock_irqrestore(&dwc->lock, flags);
-		return -EINVAL;
-	}
 
 	dwc3_gadget_set_link_state(dwc, state);
 	spin_unlock_irqrestore(&dwc->lock, flags);
