@@ -150,6 +150,12 @@ struct qpnp_qg {
 	int			soc_reporting_ready;
 	int			last_fifo_v_uv;
 	int			last_fifo_i_ua;
+	int			prev_fifo_i_ua;
+	int			soc_tcss_entry;
+	int			ibat_tcss_entry;
+	int			soc_tcss;
+	int			tcss_entry_count;
+	int			max_fcc_limit_ma;
 	u32			fifo_done_count;
 	u32			wa_flags;
 	u32			seq_no;

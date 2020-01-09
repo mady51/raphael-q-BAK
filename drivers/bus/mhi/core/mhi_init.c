@@ -71,6 +71,19 @@ static const char * const mhi_pm_state_str[] = {
 
 struct mhi_bus mhi_bus;
 
+struct mhi_controller *find_mhi_controller_by_name(const char *name)
+{
+	struct mhi_controller *mhi_cntrl, *tmp_cntrl;
+
+	list_for_each_entry_safe(mhi_cntrl, tmp_cntrl, &mhi_bus.controller_list,
+				 node) {
+		if (mhi_cntrl->name && (!strcmp(name, mhi_cntrl->name)))
+			return mhi_cntrl;
+	}
+
+	return NULL;
+}
+
 const char *to_mhi_pm_state_str(enum MHI_PM_STATE state)
 {
 	int index = find_last_bit((unsigned long *)&state, 32);
@@ -644,7 +657,7 @@ static int mhi_init_bw_scale(struct mhi_controller *mhi_cntrl)
 	MHI_LOG("BW_CFG OFFSET:0x%x\n", bw_cfg_offset);
 
 	/* advertise host support */
-	mhi_write_reg(mhi_cntrl, mhi_cntrl->regs, bw_cfg_offset,
+	mhi_cntrl->write_reg(mhi_cntrl, mhi_cntrl->regs, bw_cfg_offset,
 		      MHI_BW_SCALE_SETUP(er_index));
 
 	return 0;
@@ -742,8 +755,8 @@ int mhi_init_mmio(struct mhi_controller *mhi_cntrl)
 
 	/* setup wake db */
 	mhi_cntrl->wake_db = base + val + (8 * MHI_DEV_WAKE_DB);
-	mhi_write_reg(mhi_cntrl, mhi_cntrl->wake_db, 4, 0);
-	mhi_write_reg(mhi_cntrl, mhi_cntrl->wake_db, 0, 0);
+	mhi_cntrl->write_reg(mhi_cntrl, mhi_cntrl->wake_db, 4, 0);
+	mhi_cntrl->write_reg(mhi_cntrl, mhi_cntrl->wake_db, 0, 0);
 	mhi_cntrl->wake_set = false;
 
 	/* setup bw scale db */
@@ -1345,6 +1358,8 @@ int of_register_mhi_controller(struct mhi_controller *mhi_cntrl)
 		mhi_cntrl->map_single = mhi_map_single_no_bb;
 		mhi_cntrl->unmap_single = mhi_unmap_single_no_bb;
 	}
+
+	mhi_cntrl->write_reg = mhi_write_reg;
 
 	/* read the device info if possible */
 	if (mhi_cntrl->regs) {
