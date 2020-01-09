@@ -104,12 +104,10 @@ static int ipa_eth_init_device(struct ipa_eth_device *eth_dev)
 		return rc;
 	}
 
-	rc = ipa_eth_ep_register_interface(eth_dev);
-	if (rc) {
-		ipa_eth_dev_err(eth_dev, "Failed to register EP interface");
-		eth_dev->of_state = IPA_ETH_OF_ST_ERROR;
-		return rc;
-	}
+	rc = ipa_eth_uc_stats_init(eth_dev);
+	if (rc)
+		ipa_eth_dev_err(eth_dev,
+			"Failed to init uC stats monitor, continuing.");
 
 	ipa_eth_dev_log(eth_dev, "Initialized device");
 
@@ -128,7 +126,12 @@ static int ipa_eth_deinit_device(struct ipa_eth_device *eth_dev)
 	if (eth_dev->of_state != IPA_ETH_OF_ST_INITED)
 		return -EFAULT;
 
-	rc = ipa_eth_ep_unregister_interface(eth_dev);
+	rc = ipa_eth_uc_stats_deinit(eth_dev);
+	if (rc)
+		ipa_eth_dev_err(eth_dev,
+			"Failed to deinit uC stats monitor, continuing.");
+
+	rc = ipa_eth_offload_deinit(eth_dev);
 	if (rc) {
 		ipa_eth_dev_err(eth_dev, "Failed to unregister IPA interface");
 		eth_dev->of_state = IPA_ETH_OF_ST_ERROR;
@@ -202,6 +205,11 @@ static int ipa_eth_start_device(struct ipa_eth_device *eth_dev)
 	msg_meta.msg_len = sizeof(struct ipa_ecm_msg);
 	(void) ipa_send_msg(&msg_meta, &ecm_msg, ipa_eth_free_msg);
 
+	rc = ipa_eth_uc_stats_start(eth_dev);
+	if (rc)
+		ipa_eth_dev_err(eth_dev,
+			"Failed to start uC stats monitor, continuing.");
+
 	ipa_eth_dev_log(eth_dev, "Started device");
 
 	eth_dev->of_state = IPA_ETH_OF_ST_STARTED;
@@ -230,6 +238,18 @@ static int ipa_eth_stop_device(struct ipa_eth_device *eth_dev)
 
 	if (eth_dev->of_state != IPA_ETH_OF_ST_STARTED)
 		return -EFAULT;
+
+	rc = ipa_eth_uc_stats_stop(eth_dev);
+	if (rc)
+		ipa_eth_dev_err(eth_dev,
+			"Failed to stop uC stats monitor, continuing.");
+
+	rc = ipa_eth_ep_unregister_interface(eth_dev);
+	if (rc) {
+		ipa_eth_dev_err(eth_dev, "Failed to unregister IPA interface");
+		eth_dev->of_state = IPA_ETH_OF_ST_ERROR;
+		return rc;
+	}
 
 	rc = ipa_eth_bus_enable_pc(eth_dev);
 	if (rc) {
