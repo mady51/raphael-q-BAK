@@ -8175,7 +8175,6 @@ static int find_energy_efficient_cpu(struct sched_domain *sd,
 	bool sync_boost = false;
 	bool about_to_idle = (cpu_rq(cpu)->nr_running < 2);
 //curtis@ASTI, 2019/4/29, add for uxrealm CONFIG_OPCHAIN
-	bool is_uxtop = is_opc_task(p, UT_FORE);
 
 	fbt_env.fastpath = 0;
 
