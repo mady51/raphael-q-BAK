@@ -2405,8 +2405,7 @@ static int goodix_ts_probe(struct platform_device *pdev)
 	}
 
 	core_data->event_wq = alloc_workqueue("gdt-event-queue",
-			    WQ_HIGHPRI | WQ_UNBOUND | WQ_FREEZABLE |
-			    WQ_MEM_RECLAIM, 0);				
+				WQ_UNBOUND | WQ_HIGHPRI | WQ_CPU_INTENSIVE, 1);
 	if (!core_data->event_wq) {
 		ts_err("goodix cannot create work thread");
 		r = -ENOMEM;
